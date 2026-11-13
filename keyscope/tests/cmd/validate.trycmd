@@ -2,10 +2,10 @@
 $ keyscope validate --help
 Validate keys
 
-Usage: keyscope[EXE] validate [OPTIONS] <PROVIDER>
+Usage: keyscope[EXE] validate [OPTIONS] [PROVIDER]
 
 Arguments:
-  <PROVIDER>
+  [PROVIDER]
           Specify the provider to validate for
 
 Options:
@@ -31,6 +31,9 @@ Options:
 
   -p, --params <PARAMS>
           List of parameters
+
+      --csv-in <CSV_FILE>
+          Validate providers and parameters in bulk from a CSV file
 
   -v, --verbose
           Log level

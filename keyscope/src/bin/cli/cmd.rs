@@ -31,8 +31,8 @@ pub enum Commands {
     /// Validate keys
     Validate {
         /// Specify the provider to validate for
-        #[arg(index = 1)]
-        provider: String,
+        #[arg(index = 1, required_unless_present = "csv_in")]
+        provider: Option<String>,
 
         /// Dry run with examples given in `EXAMPLE_KEY`
         #[arg(short, long, action = ArgAction::SetTrue)]
@@ -49,6 +49,14 @@ pub enum Commands {
         /// List of parameters
         #[arg(short, long)]
         params: Vec<String>,
+
+        /// Validate providers and parameters in bulk from a CSV file
+        #[arg(
+            long,
+            value_name = "CSV_FILE",
+            conflicts_with_all = ["provider", "params"]
+        )]
+        csv_in: Option<PathBuf>,
     },
     /// Show provider requirements (params)
     Requirements {
@@ -78,12 +86,36 @@ pub fn run(args: Cli) -> anyhow::Result<CmdResult> {
             reporter,
             flip,
             params,
+            csv_in,
         } => {
+            if let Some(csv_path) = csv_in {
+                let report = super::csv::run_csv(&config, &csv_path, dry_run, flip, args.verbose)?;
+
+                // Batch mode owns its sanitized rendering. The junit reporter
+                // is built for single interactions, so it renders as stdout.
+                let message = match reporter {
+                    out::Reporter::Quiet => None,
+                    out::Reporter::Json => Some(report.to_json()),
+                    _ => Some(report.to_stdout()),
+                };
+
+                return Ok(match (report.ok(), message) {
+                    (true, Some(message)) => CmdResult::ok_with_message(&message),
+                    (true, None) => CmdResult::ok(),
+                    (false, Some(message)) => CmdResult::error_with_message(&message),
+                    (false, None) => CmdResult::error(),
+                });
+            }
+
+            // SAFETY: clap requires a positional provider unless `--csv-in`
+            // is used, which is handled above.
+            let provider_name = provider.expect("provider is required without --csv-in");
+
             // check if provider exists
-            let provider = match config.get_providers(&provider) {
+            let provider = match config.get_providers(&provider_name) {
                 Ok(p) => p,
                 Err(err) => {
-                    tracing::debug!(provider = provider, error = ?err, "provider not exists");
+                    tracing::debug!(provider = %provider_name, error = ?err, "provider not exists");
                     return Ok(CmdResult::error_with_message(out::provider_not_found()));
                 }
             };

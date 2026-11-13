@@ -1,0 +1,7 @@
+provider,key1,key2
+fakeok,super-secret-alpha,
+fakefail,super-secret-beta,
+unknown-provider,super-secret-gamma,
+,orphan-credential,
+fakeok,,
+fakeok,super-secret-alpha,

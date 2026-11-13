@@ -1,0 +1,48 @@
+providers:
+  # Local fake provider whose dry-run "ok" example satisfies the policy,
+  # producing a successful validation without any network access.
+  fakeok:
+    validation:
+      request:
+        id: "fakeok:validation"
+        desc: "fakeok: valid local credentials"
+        params:
+        - name: fakeok_1
+          desc: fake token
+        uri: http://127.0.0.1/fakeok
+        method: get
+      response:
+        status_code: "200"
+      invalid:
+        status_code: "5\\d\\d"
+      examples:
+        example:
+          status_code: "200"
+          body: ok
+        ok:
+          status_code: "200"
+          body: ok
+        err:
+          status_code: "500"
+
+  # Local fake provider whose expected policy can never match the dry-run
+  # example, producing a deterministic policy failure without network access.
+  fakefail:
+    validation:
+      request:
+        id: "fakefail:validation"
+        desc: "fakefail: always mismatching local credentials"
+        params:
+        - name: fakefail_1
+          desc: fake token
+        uri: http://127.0.0.1/fakefail
+        method: get
+      response:
+        status_code: "202"
+      examples:
+        example:
+          status_code: "200"
+          body: unexpected
+        ok:
+          status_code: "200"
+          body: unexpected

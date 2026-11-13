@@ -1,0 +1,92 @@
+Batch validation keeps per-row provenance, never prints parameters and keeps
+running after bad rows.
+
+```console
+$ keyscope validate --csv-in audit.csv --config fake-providers.yaml --dry-run --no-banner
+? 1
+❗ row 2 fakeok success: validation passed
+row 3 fakefail failure: validation failed: status_code
+row 4 unknown-provider error: unknown provider
+row 5 error: missing provider name
+row 6 fakeok error: no parameters provided
+row 7 fakeok success: validation passed
+
+Processed 6 row(s)
+
+Success: 2
+Failure: 1
+  Error: 3
+
+```
+
+Repeated credentials stay traceable through their stable row numbers, and the
+JSON reporter exposes the same sanitized per-row structure.
+
+```console
+$ keyscope validate --csv-in audit.csv --config fake-providers.yaml --dry-run --no-banner --reporter json
+? 1
+❗ [
+  {
+    "row": 2,
+    "provider": "fakeok",
+    "status": "success",
+    "summary": "validation passed"
+  },
+  {
+    "row": 3,
+    "provider": "fakefail",
+    "status": "failure",
+    "summary": "validation failed: status_code"
+  },
+  {
+    "row": 4,
+    "provider": "unknown-provider",
+    "status": "error",
+    "summary": "unknown provider"
+  },
+  {
+    "row": 5,
+    "provider": "",
+    "status": "error",
+    "summary": "missing provider name"
+  },
+  {
+    "row": 6,
+    "provider": "fakeok",
+    "status": "error",
+    "summary": "no parameters provided"
+  },
+  {
+    "row": 7,
+    "provider": "fakeok",
+    "status": "success",
+    "summary": "validation passed"
+  }
+]
+
+```
+
+The quiet reporter suppresses output while preserving the non-zero exit code.
+
+```console
+$ keyscope validate --csv-in audit.csv --config fake-providers.yaml --dry-run --no-banner --reporter quiet
+? 1
+
+```
+
+A fully healthy batch exits successfully.
+
+```console
+$ keyscope validate --csv-in all-ok.csv --config fake-providers.yaml --dry-run --no-banner --reporter quiet
+? 0
+
+```
+
+Malformed CSV headers are rejected before any validation runs.
+
+```console
+$ keyscope validate --csv-in bad-header.csv --config fake-providers.yaml --no-banner
+? 1
+❗ csv file must start with a 'provider' header column
+
+```

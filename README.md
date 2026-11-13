@@ -186,6 +186,28 @@ twilio,tw-key1,,,
 
 You can specify as many key columns as you like, as long as you provide an _empty_ value for providers which don't have that many keys, and all rows contain the same amount of cells.
 
+Each row is validated independently through the same policy engine as a single `validate` run. The report gives every data row a stable, 1-based `row` number (the header line is row 1) together with its provider, a `success`/`failure`/`error` status and a short summary:
+
+```
+$ keyscope validate --csv-in report.csv
+
+❗ row 2 twilio success: validation passed
+row 3 stripe failure: validation failed: status_code
+row 4 unknown-provider error: unknown provider
+row 5 twilio error: no parameters provided
+row 6 twilio success: validation passed
+
+Processed 5 row(s)
+
+Success: 2
+Failure: 1
+  Error: 2
+```
+
+A bad row (unknown provider, missing parameters or an execution error) never aborts the batch: remaining rows keep validating. Duplicate credentials remain traceable through their own row numbers and provider names. Parameter values are never printed back, so credentials can't leak into logs or CI output. Use `--reporter json` for the same data as JSON, or `--reporter quiet` to suppress output.
+
+The exit code is `0` only when every row succeeds; any `failure` or `error` row makes the exit code non-zero.
+
 ## Audit inactive keys
 
 If you have a dump of keys from your vault that are stale have expiry and should have been rotated, you want to test that they are all stale:
